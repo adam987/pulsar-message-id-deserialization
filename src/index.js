@@ -23,11 +23,25 @@ const subscriptionWithDeserialization = 'with-deserialization';
 
 		// Receive and ack messages, then resubscribe and count again
 
-		await countMessages(subscriptionWithoutDeserialization, { ack: true, deserializeId: false });
-		await countMessages(subscriptionWithoutDeserialization);
+		console.log(
+			`First '${subscriptionWithoutDeserialization}' subscription: %d messages`,
+			await countMessages(subscriptionWithoutDeserialization, { ack: true, deserializeId: false })
+		);
+		console.log(
+			`Second '${subscriptionWithoutDeserialization}' subscription: %d messages`,
+			await countMessages(subscriptionWithoutDeserialization),
+		);
 		
-		await countMessages(subscriptionWithDeserialization, { ack: true, deserializeId: true });
-		await countMessages(subscriptionWithDeserialization);
+		console.log();
+
+		console.log(
+			`First '${subscriptionWithDeserialization}' subscription: %d messages`,
+			await countMessages(subscriptionWithDeserialization, { ack: true, deserializeId: true })
+		);
+		console.log(
+			`Second '${subscriptionWithDeserialization}' subscription: %d messages`,
+			await countMessages(subscriptionWithDeserialization),
+		);
 
 		await client.close();
 	} catch (error) {
@@ -51,16 +65,18 @@ async function countMessages(subscription, { ack, deserializeId } = { ack: false
 	
 	try {
 		const messages = await consumer.batchReceive();
-		console.log(`'${subscription}': ${messages.length} messages`);
-		if (!ack) return;
-
-		for (let message of messages) {
-			const id = message.getMessageId();
-			await consumer.acknowledgeId(deserializeId
-				? Pulsar.MessageId.deserialize(id.serialize())
-				: id
-			);
+		
+		if (ack) {
+			for (let message of messages) {
+				const id = message.getMessageId();
+				await consumer.acknowledgeId(deserializeId
+					? Pulsar.MessageId.deserialize(id.serialize())
+					: id
+				);
+			}
 		}
+
+		return messages.length;
 	} finally {
 		await consumer.close();
 	}
